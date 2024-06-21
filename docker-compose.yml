@@ -1,8 +1,17 @@
 services:
-  server:
+  source:
     image: mcr.microsoft.com/mssql/server:2022-latest
     volumes:
-      - /Users/amirhosseinmazaheri/Documents/db_project_sql_server:/var/opt/mssql
+      - /Users/amirhosseinmazaheri/Documents/source:/var/opt/mssql
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: "@Amir1990"
+    ports:
+      - "1432:1433"
+  datawarehouse:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    volumes:
+      - /Users/amirhosseinmazaheri/Documents/datawarehouse_sql_server:/var/opt/mssql
     environment:
       ACCEPT_EULA: Y
       MSSQL_SA_PASSWORD: "@Amir1990"
