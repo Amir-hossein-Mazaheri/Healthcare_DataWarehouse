@@ -1,20 +1,29 @@
+-- Just create a schema to unset the schema from dbo
+use source
+go
+drop schema if exists Health;
+
+use source
+go
+create schema Health;
+
 -- drop tables
-drop table if exists Billing
-drop table if exists Medication
-drop table if exists Treatment
-drop table if exists Visit
-drop table if exists Patient
-drop table if exists Doctor
-drop table if exists Department
+drop table if exists source.Health.Billing
+drop table if exists source.Health.Medication
+drop table if exists source.Health.Treatment
+drop table if exists source.Health.Visit
+drop table if exists source.Health.Patient
+drop table if exists source.Health.Doctor
+drop table if exists source.Health.Department
 
 -- create needed tables
-create table Department
+create table source.Health.Department
 (
     department_id   int identity (1, 1) primary key,
     department_name nvarchar(255) not null,
 )
 
-create table Doctor
+create table source.Health.Doctor
 (
     doctor_id      int identity (1, 1) primary key,
     firstname      nvarchar(255) not null,
@@ -23,11 +32,11 @@ create table Doctor
     specialization nvarchar(100) not null,
     department_id  int           not null,
 
-    foreign key (department_id) references Department (department_id),
+    foreign key (department_id) references source.Health.Department (department_id),
 )
 
 
-create table Patient
+create table source.Health.Patient
 (
     patient_id   int identity (1, 1) primary key,
     firstname    nvarchar(255) not null,
@@ -36,10 +45,9 @@ create table Patient
     gender       char(1)       not null, -- 0 for woman 1 for man
     address      nvarchar(max) not null,
     phone        nvarchar(10)  not null,
-    insurance_id int           not null,
 )
 
-create table Visit
+create table source.Health.Visit
 (
     visit_id   int identity (1, 1) primary key,
     patient_id int           not null,
@@ -47,11 +55,11 @@ create table Visit
     visit_date DATETIME      not null,
     diagnosis  nvarchar(max) not null,
 
-    foreign key (patient_id) references Patient (patient_id),
-    foreign key (doctor_id) references Doctor (doctor_id),
+    foreign key (patient_id) references source.Health.Patient (patient_id),
+    foreign key (doctor_id) references source.Health.Doctor (doctor_id),
 )
 
-create table Treatment
+create table source.Health.Treatment
 (
     treatment_id          int identity (1, 1) primary key,
     visit_id              int           not null,
@@ -59,11 +67,11 @@ create table Treatment
     treatment_description nvarchar(max) not null,
     department_id         int           not null,
 
-    foreign key (visit_id) references Visit (visit_id),
-    foreign key (department_id) references Department (department_id),
+    foreign key (visit_id) references source.Health.Visit (visit_id),
+    foreign key (department_id) references source.Health.Department (department_id),
 )
 
-create table Medication
+create table source.Health.Medication
 (
     medication_id     int identity (1, 1) primary key,
     visit_id          int            not null,
@@ -75,10 +83,10 @@ create table Medication
     prescription_date date           not null,
     duration          int            not null, -- unit is day
 
-    foreign key (visit_id) references Visit (visit_id),
+    foreign key (visit_id) references source.Health.Visit (visit_id),
 )
 
-create table Billing
+create table source.Health.Billing
 (
     billing_id         int identity (1, 1) primary key,
     visit_id           int            not null,
@@ -87,5 +95,5 @@ create table Billing
     tax_amount         decimal(11, 2) not null,
     insurance_coverage decimal(11, 2) not null,
 
-    foreign key (visit_id) references Visit (visit_id),
+    foreign key (visit_id) references source.Health.Visit (visit_id),
 )
