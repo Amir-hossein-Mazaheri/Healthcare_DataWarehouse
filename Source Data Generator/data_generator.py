@@ -153,6 +153,16 @@ def weighted_rand_selector(a: tuple[any, int], b: tuple[any, int]):
         return b[0]
 
 
+def calculate_visit_cost(department_id, doctor_id, is_checkup):
+    departments_cost_effect = [2, 7, 4, 3, 1, 6, 5]
+    unit = 5000
+
+    cost = departments_cost_effect[department_id - 1] * doctor_id * unit
+
+    # Checkup visits cost half
+    return cost / 2 if is_checkup else cost
+
+
 # Visit per patient means that how many visits should be generated for each patient
 # default is 100 to produce 1 million visits, but you can increase it
 def generate_visits(doctors: list[dict], patients: list[dict], visit_per_patient=100):
@@ -169,15 +179,19 @@ def generate_visits(doctors: list[dict], patients: list[dict], visit_per_patient
     for patient in patients:
         for _ in range(visit_per_patient):
             doctor_index = randint(0, len(doctors) - 1)
+            doctor_id = doctors[doctor_index]["doctor_id"]
+            department_id = doctors[doctor_index]["department_id"]
+            # this line make the 10% of the visits checkup
+            is_checkup = weighted_rand_selector((1, 10), (0, 90))
 
             visit = {
                 "visit_id": index,
                 "patient_id": patient["patient_id"],
-                "doctor_id": doctors[doctor_index]["doctor_id"],
+                "doctor_id": doctor_id,
                 "visit_date": get_random_date(2021, 2023),
                 "diagnosis": lorem_ipsum[:randint(50, len(lorem_ipsum) - 1)],
-                # this line make the 10% of the visits checkup
-                "is_check_up": weighted_rand_selector((1, 10), (0, 90))
+                "visit_cost": calculate_visit_cost(department_id, doctor_id, is_checkup),
+                "is_check_up": is_checkup
             }
 
             visits.append(visit)
@@ -208,7 +222,7 @@ def calculate_treatment_cost(treatment_effect: int, department_effect: int, inde
 
     return round(((normalized_treatment_effect * treatment_effect_weight * unit) + (
             normalized_department_effect * department_effect_weight * unit) + (
-                    normalized_index_effect * index_effect_weight * unit)) / gdc, 2)
+                          normalized_index_effect * index_effect_weight * unit)) / gdc, 2)
 
 
 # In the treatment json file, each treatment type is associated with a number between 1 and 10
@@ -330,7 +344,7 @@ def generate_medications(treatments: list[dict], visits: list[dict]):
             "dosage": randint(30, 1000),  # milli gram
             "frequency": frequency,
             "frequency_unit": frequency_unit,
-            "cost": calculate_medication_cost(
+            "medication_cost": calculate_medication_cost(
                 find(medications_cost, lambda cost: cost[0] == medication_name)[1],
                 frequency, frequency_unit, duration),
             "prescription_date": visits[treatment["visit_id"] - 1]["visit_date"],
@@ -344,25 +358,85 @@ def generate_medications(treatments: list[dict], visits: list[dict]):
     return medications
 
 
+def generate_billing(visits: list[dict], treatments: list[dict], medications: list[dict]):
+    index = 1
+    treatment_index = 0
+    medication_index = 0
+    billings = []
+
+    for visit in visits:
+        insurance_coverage_percentage = randint(10, 30) / 100
+        tax_percentage = randint(15, 30) / 100
+
+        treatment_cost = 0
+        medication_cost = 0
+
+        print(treatment_index)
+        if treatments[treatment_index]["visit_id"] == visit["visit_id"]:
+            treatment_cost = treatments[treatment_index]["treatment_cost"]
+            treatment_index += 1
+
+        print(medication_index)
+        if medications[medication_index]["visit_id"] == visit["visit_id"]:
+            medication_cost = medications[medication_index]["medication_cost"]
+            medication_index += 1
+
+        total_amount_without_tax = visit["visit_cost"] + treatment_cost + medication_cost
+        tax_amount = tax_percentage * total_amount_without_tax
+        total_amount = total_amount_without_tax + tax_amount
+
+        insurance_coverage = total_amount_without_tax * insurance_coverage_percentage
+        paid_amount = total_amount - insurance_coverage
+
+        billing = {
+            "billing_id": index,
+            "visit_id": visit["visit_id"],
+            "total_amount": total_amount,
+            "paid_amount": paid_amount,
+            "tax_amount": tax_amount,
+            "insurance_coverage": insurance_coverage,
+        }
+
+        billings.append(billing)
+
+        index += 1
+
+    return billings
+
+
 departments = get_departments()
 doctors = generate_doctors(departments)
 patients = generate_patients()
 visits = generate_visits(doctors, patients)
 treatments = generate_treatments(visits, departments)
 medications = generate_medications(treatments, visits)
+billings = generate_billing(visits, treatments, medications)
 
-print(len(visits))
-print(len(treatments))
-print(len(medications))
+print("Visit Count: ", len(visits))
+print("Treatment Count: ", len(treatments))
+print("Medication Count: ", len(medications))
+print("Billing Count: ", len(billings))
 
-with open('generated_visits.json', 'w') as file:
-    json.dump(visits[:1000], file, indent=4)
-
-with open('generated_treatments.json', 'w') as file:
-    json.dump(treatments[:1000], file, indent=4)
-
-with open('generated_medications.json', 'w') as file:
-    json.dump(medications[:1000], file, indent=4)
+# with open('generated_departments.json', 'w') as file:
+#     json.dump(departments, file, indent=4)
+#
+# with open('generated_doctors.json', 'w') as file:
+#     json.dump(doctors, file, indent=4)
+#
+# with open('generated_patients.json', 'w') as file:
+#     json.dump(patients, file, indent=4)
+#
+# with open('generated_visits.json', 'w') as file:
+#     json.dump(visits, file, indent=4)
+#
+# with open('generated_treatments.json', 'w') as file:
+#     json.dump(treatments, file, indent=4)
+#
+# with open('generated_medications.json', 'w') as file:
+#     json.dump(medications, file, indent=4)
+#
+# with open('generated_billings.json', 'w') as file:
+#     json.dump(billings, file, indent=4)
 
 # pprint(generate_doctors(d))
 # pprint(generate_patients(10))

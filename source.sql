@@ -59,6 +59,7 @@ create table source.Health.Visit
     doctor_id  int           not null,
     visit_date DATETIME      not null,
     diagnosis  nvarchar(max) not null,
+    visit_cost decimal(11, 2) not null,
     is_check_up BIT not null, -- 0 for False and 1 for True
 
     foreign key (patient_id) references source.Health.Patient (patient_id),
@@ -88,7 +89,7 @@ create table source.Health.Medication
     dosage            decimal(8, 2)  not null, -- milli gram
     frequency         int            not null,
     frequency_unit    nvarchar(50)   not null check (frequency_unit in ('minute', 'hour', 'day', 'week', 'month')),
-    cost              decimal(11, 2) not null,
+    medication_cost              decimal(11, 2) not null,
     prescription_date date           not null,
     duration          int            not null,
 
