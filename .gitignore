@@ -4,3 +4,5 @@
 */*.idea
 */*.venv
 */generated*.json
+data.sql
+*/data.sql

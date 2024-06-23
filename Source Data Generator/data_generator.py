@@ -1,4 +1,5 @@
 import json
+import re
 from random import randint, shuffle
 
 
@@ -53,7 +54,7 @@ def get_random_date(start_year: int, end_year: int):
         '0' + str(day) if day < 10 else str(day))
 
 
-def get_departments() -> list[dict]:
+def get_departments():
     with open('departments.json', 'r') as file:
         departments: list[str] = json.load(file)
 
@@ -371,12 +372,10 @@ def generate_billing(visits: list[dict], treatments: list[dict], medications: li
         treatment_cost = 0
         medication_cost = 0
 
-        print(treatment_index)
         if treatments[treatment_index]["visit_id"] == visit["visit_id"]:
             treatment_cost = treatments[treatment_index]["treatment_cost"]
             treatment_index += 1
 
-        print(medication_index)
         if medications[medication_index]["visit_id"] == visit["visit_id"]:
             medication_cost = medications[medication_index]["medication_cost"]
             medication_index += 1
@@ -404,40 +403,59 @@ def generate_billing(visits: list[dict], treatments: list[dict], medications: li
     return billings
 
 
-departments = get_departments()
-doctors = generate_doctors(departments)
-patients = generate_patients()
-visits = generate_visits(doctors, patients)
-treatments = generate_treatments(visits, departments)
-medications = generate_medications(treatments, visits)
-billings = generate_billing(visits, treatments, medications)
+def is_date(date_str):
+    pattern = r'^(?:(?:(?:19|20)\d{2})-(?:(?:0[1-9]|1[0-2]))-(?:0[1-9]|1\d|2\d|3[01]))$'
+    return re.match(pattern, date_str) is not None
 
-print("Visit Count: ", len(visits))
-print("Treatment Count: ", len(treatments))
-print("Medication Count: ", len(medications))
-print("Billing Count: ", len(billings))
 
-# with open('generated_departments.json', 'w') as file:
-#     json.dump(departments, file, indent=4)
-#
-# with open('generated_doctors.json', 'w') as file:
-#     json.dump(doctors, file, indent=4)
-#
-# with open('generated_patients.json', 'w') as file:
-#     json.dump(patients, file, indent=4)
-#
-# with open('generated_visits.json', 'w') as file:
-#     json.dump(visits, file, indent=4)
-#
-# with open('generated_treatments.json', 'w') as file:
-#     json.dump(treatments, file, indent=4)
-#
-# with open('generated_medications.json', 'w') as file:
-#     json.dump(medications, file, indent=4)
-#
-# with open('generated_billings.json', 'w') as file:
-#     json.dump(billings, file, indent=4)
+# This function converts all json like data into TSQL inserts
+def produce_sql(data: list[tuple[str, list[dict]]], file_name="data.sql"):
+    with open(file_name, 'w') as file:
+        for portion in data:
+            file.write(50 * '-' + ' ' + portion[0] + ' ' + 'Inserts' + ' ' + 50 * '-' + '\n')
 
-# pprint(generate_doctors(d))
-# pprint(generate_patients(10))
-# pprint(len(generate_doctors(d)))
+            for record in portion[1]:
+                values = record.values()
+                values_str = ''
+
+                try:
+                    for i, val in enumerate(values):
+                        if isinstance(val, str):
+                            if is_date(val):
+                                values_str += f"CONVERT(DATE, '{val}', 120)"
+                            else:
+                                values_str += f"'{val}'"
+                        else:
+                            values_str += str(val)
+
+                        if i != len(values) - 1:
+                            values_str += ', '
+                except TypeError as e:
+                    print(val)
+                    print(e)
+
+                file.write(f'insert into source.Health.{portion[0]} values ({values_str})\n')
+                file.flush()
+
+            file.write('\n\n')
+
+
+if __name__ == '__main__':
+    departments = get_departments()
+    doctors = generate_doctors(departments)
+    patients = generate_patients()
+    visits = generate_visits(doctors, patients)
+    treatments = generate_treatments(visits, departments)
+    medications = generate_medications(treatments, visits)
+    billings = generate_billing(visits, treatments, medications)
+
+    all_data = [("Department", departments), ("Doctor", doctors), ("Patient", patients), ("Visit", visits),
+                ("Treatment", treatments), ("Medication", medications),
+                ("Billing", billings)]
+
+    print("Visit Count: ", len(visits))
+    print("Treatment Count: ", len(treatments))
+    print("Medication Count: ", len(medications))
+    print("Billing Count: ", len(billings))
+
+    produce_sql(all_data)
