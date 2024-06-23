@@ -1,6 +1,6 @@
-<mxfile host="Electron" modified="2024-06-21T20:34:53.168Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.5.3 Chrome/124.0.6367.207 Electron/30.0.6 Safari/537.36" etag="jzTXaO8r8smyI6c_Eyo2" version="24.5.3" type="device">
+<mxfile host="Electron" modified="2024-06-22T11:18:48.522Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.5.3 Chrome/124.0.6367.207 Electron/30.0.6 Safari/537.36" etag="S50KzlxO8DRonMIqEIhP" version="24.5.3" type="device">
   <diagram name="Page-1" id="-75GFIVih7POQPlXJFms">
-    <mxGraphModel dx="6560" dy="5467" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="820" dy="1646" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -189,7 +189,7 @@
           <mxGeometry x="1100" y="50" width="380" height="70" as="geometry" />
         </mxCell>
         <mxCell id="XWvo9iTaCNDZVtQyN0BC-58" value="Patient Accumulative Fact" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="1970" y="350" width="230" height="260" as="geometry">
+          <mxGeometry x="1970" y="350" width="230" height="286" as="geometry">
             <mxRectangle x="330" y="320" width="160" height="30" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
@@ -219,6 +219,9 @@
         </mxCell>
         <mxCell id="XWvo9iTaCNDZVtQyN0BC-79" value="current_medication" style="text;strokeColor=#6F0000;fillColor=#a20025;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;fontColor=#ffffff;" vertex="1" parent="XWvo9iTaCNDZVtQyN0BC-58">
           <mxGeometry y="234" width="230" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="XWvo9iTaCNDZVtQyN0BC-106" value="age" style="text;strokeColor=#6F0000;fillColor=#a20025;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;fontColor=#ffffff;" vertex="1" parent="XWvo9iTaCNDZVtQyN0BC-58">
+          <mxGeometry y="260" width="230" height="26" as="geometry" />
         </mxCell>
         <mxCell id="XWvo9iTaCNDZVtQyN0BC-70" value="Patient Dimension" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=none;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="2270" y="350" width="140" height="104" as="geometry" />

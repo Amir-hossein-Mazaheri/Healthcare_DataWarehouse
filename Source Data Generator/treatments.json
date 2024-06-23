@@ -1,0 +1,450 @@
+{
+  "types": [
+    ["Surgery", 10],
+    ["Therapy", 4],
+    ["Diagnostic Test", 3],
+    ["Follow-up Care", 2],
+    ["Emergency Care", 6],
+    ["Rehabilitation", 7],
+    ["Preventive Care", 1],
+    ["Palliative Care", 9],
+    ["Counseling", 5],
+    ["Procedures", 8]
+  ],
+  "treatments": [
+    [
+      [
+        "Stabilization of trauma patients",
+        4
+      ],
+      [
+        "Cardiac arrest management",
+        4
+      ],
+      [
+        "Treatment of acute respiratory distress",
+        4
+      ],
+      [
+        "Management of severe allergic reactions",
+        4
+      ],
+      [
+        "Poisoning and overdose treatment",
+        4
+      ],
+      [
+        "Fracture and dislocation treatment",
+        9
+      ],
+      [
+        "Management of acute infections",
+        4
+      ],
+      [
+        "Control of severe bleeding",
+        4
+      ],
+      [
+        "Treatment of burn injuries",
+        9
+      ],
+      [
+        "Initial management of stroke",
+        4
+      ],
+      [
+        "Treatment of severe dehydration",
+        4
+      ],
+      [
+        "Acute pain management",
+        4
+      ],
+      [
+        "Initial psychiatric crisis intervention",
+        4
+      ],
+      [
+        "Rapid assessment and triage",
+        4
+      ],
+      [
+        "Treatment of acute abdominal pain",
+        4
+      ]
+    ],
+    [
+      [
+        "Coronary artery bypass surgery",
+        0
+      ],
+      [
+        "Angioplasty and stent placement",
+        9
+      ],
+      [
+        "Heart valve repair/replacement",
+        0
+      ],
+      [
+        "Pacemaker implantation",
+        9
+      ],
+      [
+        "Cardiac catheterization",
+        2
+      ],
+      [
+        "Treatment of heart failure",
+        1
+      ],
+      [
+        "Management of arrhythmias",
+        1
+      ],
+      [
+        "Echocardiography",
+        2
+      ],
+      [
+        "Stress testing",
+        5
+      ],
+      [
+        "Cardiac rehabilitation",
+        1
+      ],
+      [
+        "Hypertension management",
+        1
+      ],
+      [
+        "Hyperlipidemia treatment",
+        2
+      ],
+      [
+        "Heart transplant evaluation",
+        9
+      ],
+      [
+        "Treatment of congenital heart defects",
+        9
+      ],
+      [
+        "Preventive cardiology care",
+        6
+      ]
+    ],
+    [
+      [
+        "Immunization administration",
+        6
+      ],
+      [
+        "Treatment of childhood asthma",
+        1
+      ],
+      [
+        "Management of pediatric infections",
+        1
+      ],
+      [
+        "Growth and development assessment",
+        2
+      ],
+      [
+        "Treatment of ADHD",
+        1
+      ],
+      [
+        "Pediatric diabetes management",
+        1
+      ],
+      [
+        "Treatment of congenital anomalies",
+        9
+      ],
+      [
+        "Well-child check-ups",
+        6
+      ],
+      [
+        "Pediatric trauma care",
+        4
+      ],
+      [
+        "Management of childhood obesity",
+        1
+      ],
+      [
+        "Neonatal intensive care",
+        4
+      ],
+      [
+        "Pediatric surgery",
+        0
+      ],
+      [
+        "Treatment of genetic disorders",
+        1
+      ],
+      [
+        "School physical exams",
+        6
+      ],
+      [
+        "Pediatric palliative care",
+        7
+      ]
+    ],
+    [
+      [
+        "Joint replacement surgery",
+        0
+      ],
+      [
+        "Fracture repair",
+        9
+      ],
+      [
+        "Arthroscopy",
+        9
+      ],
+      [
+        "Treatment of sports injuries",
+        1
+      ],
+      [
+        "Spine surgery",
+        0
+      ],
+      [
+        "Management of osteoporosis",
+        1
+      ],
+      [
+        "Physical therapy for musculoskeletal issues",
+        5
+      ],
+      [
+        "Treatment of rheumatoid arthritis",
+        1
+      ],
+      [
+        "Carpal tunnel release",
+        9
+      ],
+      [
+        "Orthopedic trauma care",
+        4
+      ],
+      [
+        "Treatment of congenital bone disorders",
+        9
+      ],
+      [
+        "Treatment of tendon and ligament injuries",
+        9
+      ],
+      [
+        "Osteoarthritis management",
+        1
+      ],
+      [
+        "Casting and splinting",
+        9
+      ],
+      [
+        "Orthopedic rehabilitation",
+        5
+      ]
+    ],
+    [
+      [
+        "X-ray imaging",
+        2
+      ],
+      [
+        "MRI scans",
+        2
+      ],
+      [
+        "CT scans",
+        2
+      ],
+      [
+        "Ultrasound imaging",
+        2
+      ],
+      [
+        "Mammography",
+        2
+      ],
+      [
+        "Nuclear medicine scans",
+        2
+      ],
+      [
+        "Interventional radiology procedures",
+        9
+      ],
+      [
+        "PET scans",
+        2
+      ],
+      [
+        "Bone density scans",
+        2
+      ],
+      [
+        "Fluoroscopy",
+        2
+      ],
+      [
+        "Diagnostic angiography",
+        2
+      ],
+      [
+        "Radiation therapy planning",
+        1
+      ],
+      [
+        "Image-guided biopsy",
+        9
+      ],
+      [
+        "Contrast studies",
+        2
+      ],
+      [
+        "Radiologic assessment of fractures",
+        2
+      ]
+    ],
+    [
+      [
+        "Chemotherapy administration",
+        1
+      ],
+      [
+        "Radiation therapy",
+        1
+      ],
+      [
+        "Surgical oncology procedures",
+        0
+      ],
+      [
+        "Immunotherapy",
+        1
+      ],
+      [
+        "Targeted therapy",
+        1
+      ],
+      [
+        "Bone marrow transplant",
+        9
+      ],
+      [
+        "Palliative care for cancer patients",
+        7
+      ],
+      [
+        "Cancer screening and diagnosis",
+        2
+      ],
+      [
+        "Treatment of leukemia",
+        1
+      ],
+      [
+        "Treatment of lymphoma",
+        1
+      ],
+      [
+        "Treatment of solid tumors",
+        1
+      ],
+      [
+        "Pain management for cancer patients",
+        1
+      ],
+      [
+        "Management of treatment side effects",
+        1
+      ],
+      [
+        "Oncologic imaging",
+        2
+      ],
+      [
+        "Clinical trials and research participation",
+        2
+      ]
+    ],
+    [
+      [
+        "Stroke management",
+        4
+      ],
+      [
+        "Treatment of epilepsy",
+        1
+      ],
+      [
+        "Management of multiple sclerosis",
+        1
+      ],
+      [
+        "Treatment of Parkinson's disease",
+        1
+      ],
+      [
+        "Neuropathy treatment",
+        1
+      ],
+      [
+        "Migraine management",
+        1
+      ],
+      [
+        "Neurorehabilitation",
+        5
+      ],
+      [
+        "Diagnosis of neurodegenerative diseases",
+        2
+      ],
+      [
+        "Brain tumor treatment",
+        0
+      ],
+      [
+        "Lumbar puncture procedures",
+        9
+      ],
+      [
+        "EEG monitoring",
+        2
+      ],
+      [
+        "Management of neuroinfections",
+        1
+      ],
+      [
+        "Treatment of neuromuscular disorders",
+        1
+      ],
+      [
+        "Cognitive and behavioral neurology",
+        1
+      ],
+      [
+        "Management of traumatic brain injury",
+        1
+      ]
+    ]
+  ]
+}

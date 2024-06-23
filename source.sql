@@ -22,30 +22,35 @@ create table source.Health.Department
     department_id   int identity (1, 1) primary key,
     department_name nvarchar(255) not null,
 )
+go
 
 create table source.Health.Doctor
 (
     doctor_id      int identity (1, 1) primary key,
-    firstname      nvarchar(255) not null,
-    lastname       nvarchar(255) not null,
-    phone          nvarchar(10)  not null,
-    specialization nvarchar(100) not null,
-    department_id  int           not null,
+    national_code  nvarchar(10) unique not null,
+    firstname      nvarchar(255)       not null,
+    lastname       nvarchar(255)       not null,
+    gender         BIT             not null, -- 0 for woman 1 for man
+    phone          nvarchar(10)        not null,
+    specialization nvarchar(100)       not null,
+    department_id  int                 not null,
 
     foreign key (department_id) references source.Health.Department (department_id),
 )
+go
 
 
 create table source.Health.Patient
 (
-    patient_id   int identity (1, 1) primary key,
-    firstname    nvarchar(255) not null,
-    lastname     nvarchar(255) not null,
-    dob          Date          not null, -- date of birthday
-    gender       char(1)       not null, -- 0 for woman 1 for man
-    address      nvarchar(max) not null,
-    phone        nvarchar(10)  not null,
+    patient_id    int identity (1, 1) primary key,
+    national_code nvarchar(10) unique not null,
+    firstname     nvarchar(255)       not null,
+    lastname      nvarchar(255)       not null,
+    dob           Date                not null, -- date of birthday
+    gender        BIT             not null, -- 0 for woman 1 for man
+    phone         nvarchar(10)        not null,
 )
+go
 
 create table source.Health.Visit
 (
@@ -54,37 +59,42 @@ create table source.Health.Visit
     doctor_id  int           not null,
     visit_date DATETIME      not null,
     diagnosis  nvarchar(max) not null,
+    is_check_up BIT not null, -- 0 for False and 1 for True
 
     foreign key (patient_id) references source.Health.Patient (patient_id),
     foreign key (doctor_id) references source.Health.Doctor (doctor_id),
 )
+go
 
 create table source.Health.Treatment
 (
     treatment_id          int identity (1, 1) primary key,
-    visit_id              int           not null,
-    treatment_type        nvarchar(50)  not null,
-    treatment_description nvarchar(max) not null,
-    department_id         int           not null,
+    visit_id              int            not null,
+    treatment_type        nvarchar(50)   not null,
+    treatment_description nvarchar(max)  not null,
+    treatment_cost        decimal(11, 2) not null,
+    department_id         int            not null,
 
     foreign key (visit_id) references source.Health.Visit (visit_id),
     foreign key (department_id) references source.Health.Department (department_id),
 )
+go
 
 create table source.Health.Medication
 (
     medication_id     int identity (1, 1) primary key,
     visit_id          int            not null,
     medication_name   nvarchar(255)  not null,
-    dosage            decimal(8, 2)  not null,
+    dosage            decimal(8, 2)  not null, -- milli gram
     frequency         int            not null,
     frequency_unit    nvarchar(50)   not null check (frequency_unit in ('minute', 'hour', 'day', 'week', 'month')),
     cost              decimal(11, 2) not null,
     prescription_date date           not null,
-    duration          int            not null, -- unit is day
+    duration          int            not null,
 
     foreign key (visit_id) references source.Health.Visit (visit_id),
 )
+go
 
 create table source.Health.Billing
 (
@@ -97,3 +107,4 @@ create table source.Health.Billing
 
     foreign key (visit_id) references source.Health.Visit (visit_id),
 )
+go

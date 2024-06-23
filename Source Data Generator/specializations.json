@@ -1,0 +1,51 @@
+[
+  [
+    "Emergency Medicine Physician",
+    "Trauma Surgeon",
+    "Emergency Nurse Practitioner",
+    "Pediatric Emergency Medicine Specialist",
+    "Toxicologist"
+  ],
+  [
+    "Interventional Cardiologist",
+    "Electrophysiologist",
+    "Heart Failure Specialist",
+    "Preventive Cardiologist",
+    "Cardiac Surgeon"
+  ],
+  [
+    "Pediatrician",
+    "Pediatric Cardiologist",
+    "Pediatric Neurologist",
+    "Pediatric Endocrinologist",
+    "Pediatric Oncologist"
+  ],
+  [
+    "Orthopedic Surgeon",
+    "Sports Medicine Specialist",
+    "Pediatric Orthopedist",
+    "Spine Surgeon",
+    "Hand Surgeon"
+  ],
+  [
+    "Diagnostic Radiologist",
+    "Interventional Radiologist",
+    "Neuroradiologist",
+    "Pediatric Radiologist",
+    "Breast Imaging Specialist"
+  ],
+  [
+    "Medical Oncologist",
+    "Radiation Oncologist",
+    "Surgical Oncologist",
+    "Pediatric Oncologist",
+    "Hematologist-Oncologist"
+  ],
+  [
+    "General Neurologist",
+    "Pediatric Neurologist",
+    "Neuro-Oncologist",
+    "Stroke Specialist",
+    "Epileptologist"
+  ]
+]
