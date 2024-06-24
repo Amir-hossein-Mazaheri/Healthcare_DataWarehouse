@@ -110,4 +110,14 @@ create table source.Health.Billing
 )
 go
 
-insert into source.Health.Department values (1, 'D')
+select *
+from Health.Department
+
+select count(*)
+from Health.Visit
+
+select *
+from Health.Treatment
+
+select count(*)
+from Health.Treatment

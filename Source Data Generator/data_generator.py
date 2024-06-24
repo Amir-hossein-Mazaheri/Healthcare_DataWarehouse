@@ -1,5 +1,6 @@
 import json
 import re
+import pyodbc
 from random import randint, shuffle
 
 
@@ -408,36 +409,48 @@ def is_date(date_str):
     return re.match(pattern, date_str) is not None
 
 
+def connect_to_sql_server():
+    connection_string = (
+        "DRIVER={ODBC Driver 18 for SQL Server};"
+        "SERVER=127.0.0.1;"
+        "DATABASE=source;"
+        "UID=sa;"
+        "PWD=@Amir1990;"
+        "TrustServerCertificate=yes;"
+    )
+
+    connection = pyodbc.connect(connection_string)
+
+    return connection.cursor()
+
+
 # This function converts all json like data into TSQL inserts
-def produce_sql(data: list[tuple[str, list[dict]]], file_name="data.sql"):
-    with open(file_name, 'w') as file:
-        for portion in data:
-            file.write(50 * '-' + ' ' + portion[0] + ' ' + 'Inserts' + ' ' + 50 * '-' + '\n')
+def produce_sql_and_insert_into(data: list[tuple[str, list[dict]]], file_name="data.sql"):
+    cursor = connect_to_sql_server()
+    print("Connected to Sql Server...")
 
-            for record in portion[1]:
-                values = record.values()
-                values_str = ''
+    for portion in data:
+        for record in portion[1]:
+            values = record.values()
+            values_str = ''
 
-                try:
-                    for i, val in enumerate(values):
-                        if isinstance(val, str):
-                            if is_date(val):
-                                values_str += f"CONVERT(DATE, '{val}', 120)"
-                            else:
-                                values_str += f"'{val}'"
-                        else:
-                            values_str += str(val)
+            for i, val in enumerate(values):
+                if isinstance(val, str):
+                    if is_date(val):
+                        values_str += f"CONVERT(DATE, '{val}', 120)"
+                    else:
+                        replaced_val = val.replace("'", "''")
+                        values_str += f"'{replaced_val}'"
+                else:
+                    values_str += str(val)
 
-                        if i != len(values) - 1:
-                            values_str += ', '
-                except TypeError as e:
-                    print(val)
-                    print(e)
+                if i != len(values) - 1:
+                    values_str += ', '
 
-                file.write(f'insert into source.Health.{portion[0]} values ({values_str})\n')
-                file.flush()
-
-            file.write('\n\n')
+            sql = f'insert into source.Health.{portion[0]} values ({values_str})'
+            print(sql)
+            cursor.execute(sql)
+            cursor.commit()
 
 
 if __name__ == '__main__':
@@ -449,8 +462,8 @@ if __name__ == '__main__':
     medications = generate_medications(treatments, visits)
     billings = generate_billing(visits, treatments, medications)
 
-    all_data = [("Department", departments), ("Doctor", doctors), ("Patient", patients), ("Visit", visits),
-                ("Treatment", treatments), ("Medication", medications),
+    all_data = [("Department", departments), ("Doctor", doctors), ("Patient", patients), ("Visit", visits), ("Treatment", treatments),
+                ("Medication", medications),
                 ("Billing", billings)]
 
     print("Visit Count: ", len(visits))
@@ -458,4 +471,4 @@ if __name__ == '__main__':
     print("Medication Count: ", len(medications))
     print("Billing Count: ", len(billings))
 
-    produce_sql(all_data)
+    produce_sql_and_insert_into(all_data)
