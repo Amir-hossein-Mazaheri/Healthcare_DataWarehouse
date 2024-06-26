@@ -1,7 +1,6 @@
 import json
-import re
-import pyodbc
 from random import randint, shuffle
+from common import produce_sql_and_insert_into
 
 
 # Each table has its own generator function
@@ -404,55 +403,6 @@ def generate_billing(visits: list[dict], treatments: list[dict], medications: li
     return billings
 
 
-def is_date(date_str):
-    pattern = r'^(?:(?:(?:19|20)\d{2})-(?:(?:0[1-9]|1[0-2]))-(?:0[1-9]|1\d|2\d|3[01]))$'
-    return re.match(pattern, date_str) is not None
-
-
-def connect_to_sql_server():
-    connection_string = (
-        "DRIVER={ODBC Driver 18 for SQL Server};"
-        "SERVER=127.0.0.1;"
-        "DATABASE=source;"
-        "UID=sa;"
-        "PWD=@Amir1990;"
-        "TrustServerCertificate=yes;"
-    )
-
-    connection = pyodbc.connect(connection_string)
-
-    return connection.cursor()
-
-
-# This function converts all json like data into TSQL inserts
-def produce_sql_and_insert_into(data: list[tuple[str, list[dict]]], file_name="data.sql"):
-    cursor = connect_to_sql_server()
-    print("Connected to Sql Server...")
-
-    for portion in data:
-        for record in portion[1]:
-            values = record.values()
-            values_str = ''
-
-            for i, val in enumerate(values):
-                if isinstance(val, str):
-                    if is_date(val):
-                        values_str += f"CONVERT(DATE, '{val}', 120)"
-                    else:
-                        replaced_val = val.replace("'", "''")
-                        values_str += f"'{replaced_val}'"
-                else:
-                    values_str += str(val)
-
-                if i != len(values) - 1:
-                    values_str += ', '
-
-            sql = f'insert into source.Health.{portion[0]} values ({values_str})'
-            print(sql)
-            cursor.execute(sql)
-            cursor.commit()
-
-
 if __name__ == '__main__':
     departments = get_departments()
     doctors = generate_doctors(departments)
@@ -462,7 +412,8 @@ if __name__ == '__main__':
     medications = generate_medications(treatments, visits)
     billings = generate_billing(visits, treatments, medications)
 
-    all_data = [("Department", departments), ("Doctor", doctors), ("Patient", patients), ("Visit", visits), ("Treatment", treatments),
+    all_data = [("Department", departments), ("Doctor", doctors), ("Patient", patients), ("Visit", visits),
+                ("Treatment", treatments),
                 ("Medication", medications),
                 ("Billing", billings)]
 
