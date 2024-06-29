@@ -22,7 +22,7 @@ def connect_to_sql_server():
     return connection.cursor()
 
 
-def produce_sql_and_insert_into(data: list[tuple[str, list[dict]]], database="source", schema="Health"):
+def produce_sql_and_insert_into(data: list[tuple[str, list[dict]]], database="source", schema="Health", callback=None):
     cursor = connect_to_sql_server()
     print("Connected to Sql Server...")
 
@@ -48,3 +48,8 @@ def produce_sql_and_insert_into(data: list[tuple[str, list[dict]]], database="so
             print(sql)
             cursor.execute(sql)
             cursor.commit()
+
+    if callback is not None:
+        callback(cursor)
+
+    cursor.close()

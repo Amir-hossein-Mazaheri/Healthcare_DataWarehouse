@@ -1,4 +1,3 @@
-import pyodbc
 import datetime
 import calendar
 import jdatetime
@@ -77,6 +76,27 @@ def time_generator(start_year: int, end_year: int):
     return time_dimension
 
 
+def callback(time_dimension):
+    def closure(cursor):
+        value_ranges = ""
+
+        for i, time in enumerate(time_dimension):
+            time_key = time["time_key"]
+            value_ranges += f"'{time_key}'"
+
+            if i != len(time_dimension) - 1:
+                value_ranges += ", "
+
+        sql_str = f"use data_warehouse; create partition function DayPartition (date) as range left for values ({value_ranges})"
+
+        print(sql_str)
+        cursor.execute(sql_str)
+        cursor.commit()
+
+    return closure
+
+
 if __name__ == '__main__':
-    t = time_generator(2000, 2100)
-    produce_sql_and_insert_into([("Dim_Time", t)], "data_warehouse", "Warehouse")
+    t = time_generator(2020, 2050)
+    print(len(t))
+    produce_sql_and_insert_into([("Dim_Time", t)], "data_warehouse", "Warehouse", callback(t))

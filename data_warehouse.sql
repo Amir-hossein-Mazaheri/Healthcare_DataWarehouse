@@ -188,6 +188,13 @@ drop table if exists data_warehouse.Warehouse.Fact_Patient_Daily;
 drop table if exists data_warehouse.Warehouse.Fact_Patient_ACC;
 drop table if exists data_warehouse.Warehouse.Fact_Patient_Doctor_Factless;
 
+-- partition config
+
+-- DayPartition is created by the time_generator.py
+CREATE PARTITION SCHEME DayPartitionScheme
+    AS PARTITION DayPartition
+    ALL TO ([PRIMARY]);
+
 -- Transactional Fact
 create table data_warehouse.Warehouse.Fact_Visit_Transactional
 (
@@ -195,8 +202,8 @@ create table data_warehouse.Warehouse.Fact_Visit_Transactional
     patient_surrogate_key    int            not null,
     department_id            int            not null,
     doctor_id                int            not null,
-    treatment_id             int            not null,
-    medication_id            int            not null,
+    treatment_id             int            null,
+    medication_id            int            null,
     billing_id               int            not null,
     time_key                 date           not null,
 
@@ -225,7 +232,10 @@ create table data_warehouse.Warehouse.Fact_Patient_Daily
     total_paid               decimal(15, 4) not null,
     current_treatment_type   nvarchar(255)  not null,
     current_medication_name  nvarchar(512)  not null,
-)
+) ON DayPartitionScheme
+(
+    time_key
+);
 go
 
 -- Accumulative Fact
@@ -274,6 +284,7 @@ drop procedure if exists Warehouse.ins_dim_billing;
 drop procedure if exists Warehouse.ins_fact_visit_transactional
 drop procedure if exists Warehouse.ins_fact_patient_daily
 drop procedure if exists Warehouse.ins_fact_patient_acc
+drop procedure if exists Warehouse.add_daily_partition
 drop procedure if exists Warehouse.main
 
 -- helper procedures
@@ -1058,11 +1069,11 @@ begin
                    medication_id,
                    billing_id,
                    @current_date,
-                   total_amount,
-                   medication_cost,
-                   treatment_cost,
-                   insurance_coverage,
-                   paid_amount
+                   isnull(total_amount, 0),
+                   isnull(insurance_coverage, 0),
+                   isnull(paid_amount, 0),
+                   isnull(medication_cost, 0),
+                   isnull(treatment_cost, 0)
             from (select visit_id,
                          patient_id,
                          department_id,
@@ -1091,13 +1102,13 @@ begin
                    t.medication_id,
                    t.billing_id,
                    @current_date,
-                   t.total_amount,
-                   t.medication_cost,
-                   t.treatment_cost,
-                   t.insurance_coverage,
-                   t.paid_amount
+                   t.total_cost,
+                   t.total_insurance_coverage,
+                   t.total_paid,
+                   t.total_medication_cost,
+                   t.total_treatment_cost
             from temp_visits as t
-                     inner join data_warehouse.Warehouse.Dim_Patient as dp on (t.patient_id = dp.patient_id)
+                     inner join data_warehouse.Warehouse.Dim_Patient as dp on (t.patient_surrogate_key = dp.patient_id)
             where dp.phone_current_flag = 1
 
             execute Warehouse.create_log 'ins_fact_visit_transactional', 'temp_visits_with_surrogate_key', @type;
@@ -1111,11 +1122,11 @@ begin
                    medication_id,
                    billing_id,
                    @current_date,
-                   total_amount,
-                   insurance_coverage,
-                   paid_amount,
-                   medication_cost,
-                   treatment_cost
+                   total_cost,
+                   total_insurance_coverage,
+                   total_paid,
+                   total_medication_cost,
+                   total_treatment_cost
             from temp_visits_with_surrogate_key
 
             execute Warehouse.create_log 'ins_fact_visit_transactional', 'Fact_Visit_Transactional', @type;
@@ -1130,17 +1141,18 @@ create procedure Warehouse.ins_fact_patient_daily @start_date date, @end_date da
 as
 begin
     if object_id('temp_all_patients', 'U') is null and object_id('temp_today_visits', 'U') is null and
-       object_id('temp_patient_visits', 'U') is null and object_id('temp_last_treatments', 'U') is null and
-       object_id('temp_last_medications', 'U') is null and object_id('temp_full_patient_visits', 'U') is null and
+       object_id('temp_patient_visits', 'U') is null and object_id('temp_last_treatment_medication', 'U') is null and
+       object_id('temp_full_patient_visits', 'U') is null and object_id('temp_yesterday_visits', 'U') is null and
        object_id('temp_full_patient_visits_accumulative', 'U') is null
         begin
             -- 1
-            select patient_surrogate_key, patient_id
-            into temp_all_patients
-            from data_warehouse.Warehouse.Dim_Patient
-            where 1 = 0
+            create table temp_all_patients
+            (
+                patient_surrogate_key int not null,
+                patient_id            int not null
+            );
 
-            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_all_patients', 'copy-schema';
+            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_all_patients', 'create-table';
 
             -- 2
             select *
@@ -1166,20 +1178,20 @@ begin
             execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_patient_visits', 'copy-schema';
 
             -- 4
-            select patient_id, treatment_type
-            into temp_last_treatments
-            from data_warehouse.Warehouse.Dim_Visit
+            select *
+            into temp_yesterday_visits
+            from data_warehouse.Warehouse.Fact_Patient_Daily
             where 1 = 0
 
-            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_last_treatments', 'copy-schema';
+            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_yesterday_visits', 'copy-schema';
 
             -- 5
-            select patient_id, medication_name
-            into temp_last_medications
+            select patient_id, treatment_type, medication_name
+            into temp_last_treatment_medication
             from data_warehouse.Warehouse.Dim_Visit
             where 1 = 0
 
-            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_last_medications', 'copy-schema';
+            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_last_treatment_medication', 'copy-schema';
 
             -- 6
             select *
@@ -1218,13 +1230,13 @@ begin
 
             execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_patient_visits', @type;
 
-            truncate table temp_last_treatments
+            truncate table temp_yesterday_visits
 
-            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_last_treatments', @type;
+            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_yesterday_visits', @type;
 
-            truncate table temp_last_medications
+            truncate table temp_last_treatment_medication
 
-            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_last_medications', @type;
+            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_last_treatment_medication', @type;
 
             truncate table temp_full_patient_visits
 
@@ -1287,45 +1299,88 @@ begin
 
             execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_today_visits', @type;
 
+            insert into temp_yesterday_visits
+            select patient_surrogate_key,
+                   time_key,
+                   total_visits,
+                   total_treatments,
+                   total_medications,
+                   total_cost,
+                   total_insurance_coverage,
+                   total_paid,
+                   current_treatment_type,
+                   current_medication_name
+            from data_warehouse.Warehouse.Fact_Patient_Daily
+            where time_key >= DATEADD(day, -1, @current_date)
+              and time_key < @current_date
+
+            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_yesterday_visits', @type;
+
             insert into temp_patient_visits
             select p.patient_surrogate_key,
                    @current_date,
-                   count(v.visit_id),
-                   count(v.treatment_id),
-                   count(v.medication_id),
-                   sum(v.total_amount),
-                   sum(v.insurance_coverage),
-                   sum(v.paid_amount)
+                   isnull(count(v.visit_id), 0),
+                   isnull(count(v.treatment_id), 0),
+                   isnull(count(v.medication_id), 0),
+                   isnull(sum(v.total_amount), 0),
+                   isnull(sum(v.insurance_coverage), 0),
+                   isnull(sum(v.paid_amount), 0)
             from temp_all_patients as p
                      left join temp_today_visits as v on (v.patient_id = p.patient_id)
             group by p.patient_surrogate_key, p.patient_id
 
             execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_patient_visits', @type;
 
+            if not exists(select * from data_warehouse.Warehouse.Fact_Patient_Daily)
+                begin
+                    with lv as (select patient_id, max(visit_id) as last_visit_with_treatment
+                                from temp_today_visits
+                                where is_check_up = 0
+                                  and treatment_id is not null
+                                group by patient_id),
+                         wv as (select lv.patient_id, treatment_type, medication_name
+                                from lv
+                                         inner join temp_today_visits as v on (lv.last_visit_with_treatment = v.visit_id)),
+                         ap as (select p.patient_id, wv.treatment_type, wv.medication_name
+                                from temp_all_patients as p
+                                         left join wv on (p.patient_id = wv.patient_id))
+                    insert
+                    into temp_last_treatment_medication
+                    select ap.patient_id, isnull(treatment_type, '-1'), isnull(medication_name, '-1')
+                    from ap
 
-            insert into temp_last_treatments
-            select patient_id, treatment_type
-            from (select max(visit_id) as last_visit_with_treatment
-                  from temp_today_visits
-                  where is_check_up = 0
-                    and medication_id is not null
-                  group by patient_id) as lv
-                     inner join temp_today_visits as v
-                                on (lv.last_visit_with_treatment = v.visit_id)
+                    execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_last_treatment_medication', @type;
+                end
+            else
+                begin
+                    -- current treatment
+                    with lv as (select patient_id, max(visit_id) as last_visit_with_treatment
+                                from temp_today_visits
+                                where is_check_up = 0
+                                  and treatment_id is not null
+                                group by patient_id),
+                         wv as (select lv.patient_id, treatment_type, medication_name
+                                from lv
+                                         inner join temp_today_visits as v on (lv.last_visit_with_treatment = v.visit_id)),
+                         ap as (select p.patient_id, wv.treatment_type, wv.medication_name
+                                from temp_all_patients as p
 
-            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_last_treatments', @type;
+                                         left join wv on (p.patient_id = wv.patient_id)),
+                         pd as (select tp.patient_id, current_treatment_type, current_medication_name
+                                from temp_yesterday_visits as fpd
+                                         inner join temp_all_patients as tp
+                                                    on (tp.patient_surrogate_key = fpd.patient_surrogate_key))
+                    insert
+                    into temp_last_treatment_medication
+                    select ap.patient_id,
+                           isnull(ap.treatment_type, pd.current_treatment_type),
+                           isnull(ap.medication_name, pd.current_medication_name)
+                    from ap
+                             inner join pd
+                                        on (ap.patient_id = pd.patient_id)
 
-            insert into temp_last_medications
-            select patient_id, medication_name
-            from (select max(visit_id) as last_visit_with_medication
-                  from temp_today_visits
-                  where is_check_up = 0
-                    and medication_id is not null
-                  group by patient_id) as lv
-                     inner join temp_today_visits as v
-                                on (lv.last_visit_with_medication = v.visit_id)
-
-            execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_last_medications', @type;
+                    execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_last_treatment_medication', @type;
+                end
 
             insert into temp_full_patient_visits
             select patient_surrogate_key,
@@ -1337,13 +1392,20 @@ begin
                    total_insurance_coverage,
                    total_paid,
                    tt.treatment_type,
-                   tm.medication_name
-            from (select *
+                   tt.medication_name
+            from (select tv.patient_surrogate_key,
+                         tp.patient_id,
+                         time_key,
+                         total_visits,
+                         total_treatments,
+                         total_medications,
+                         total_cost,
+                         total_insurance_coverage,
+                         total_paid
                   from temp_patient_visits as tv
                            inner join temp_all_patients as tp
                                       on (tv.patient_surrogate_key = tp.patient_surrogate_key)) as v
-                     inner join temp_last_treatments as tt on (v.patient_id = tt.patient_id)
-                     inner join temp_last_medications as tm on (v.patient_id = tm.patient_id)
+                     inner join temp_last_treatment_medication as tt on (v.patient_id = tt.patient_id)
 
             execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_full_patient_visits', @type;
 
@@ -1369,7 +1431,18 @@ begin
             else
                 begin
                     -- to make it simple it get the previous record for each patient and accumulate the measures
-                    insert into temp_full_patient_visits_accumulative
+                    with pd as (select dp.patient_id,
+                                       total_visits,
+                                       total_treatments,
+                                       total_medications,
+                                       total_cost,
+                                       total_insurance_coverage,
+                                       total_paid
+                                from temp_yesterday_visits as fpd
+                                         inner join data_warehouse.Warehouse.Dim_Patient as dp
+                                                    on (fpd.patient_surrogate_key = dp.patient_surrogate_key))
+                    insert
+                    into temp_full_patient_visits_accumulative
                     select p1.patient_surrogate_key,
                            p1.time_key,
                            p1.total_visits + pd.total_visits,
@@ -1381,20 +1454,9 @@ begin
                            p1.current_treatment_type,
                            p1.current_medication_name
                     from temp_full_patient_visits as p1
-                             inner join temp_today_visits as t1
+                             inner join temp_all_patients as t1
                                         on (t1.patient_surrogate_key = p1.patient_surrogate_key)
-                             inner join (select dp.patient_id,
-                                                total_visits,
-                                                total_treatments,
-                                                total_medications,
-                                                total_cost,
-                                                total_insurance_coverage,
-                                                total_paid
-                                         from data_warehouse.Warehouse.Fact_Patient_Daily as fpd
-                                                  inner join data_warehouse.Warehouse.Dim_Patient as dp
-                                                             on (fpd.patient_surrogate_key = dp.patient_surrogate_key)
-                                         where time_key <= DATEADD(day, -1, @current_date)
-                                           and time_key > @current_date) as pd
+                             inner join pd
                                         on (t1.patient_id = pd.patient_id)
 
                     execute Warehouse.create_log 'ins_fact_patient_daily', 'temp_full_patient_visits_accumulative',
@@ -1451,7 +1513,7 @@ begin
 
             execute Warehouse.create_log 'ins_fact_patient_acc', 'temp_last_day_patients', 'copy-schema';
 
-            select patient_surrogate_key, total_treatments_cost, total_medications_cost, patient_age
+            select patient_surrogate_key, total_treatments_cost, total_medications_cost, total_visits_cost, patient_age
             into temp_other_costs
             from data_warehouse.Warehouse.Fact_Patient_ACC
             where 1 = 0
@@ -1642,84 +1704,79 @@ begin
 end;
 go
 
+drop procedure Warehouse.main
 create procedure Warehouse.main
 as
 begin
     -- run SA main ETL procedure
 --     execute staging.Cache.main;
 
-    execute data_warehouse.Warehouse.ins_dim_department;
-
-    if exists(select * from data_warehouse.Warehouse.Dim_Doctor)
-        begin
-            execute data_warehouse.Warehouse.first_load_dim_doctor;
-        end
-    else
-        begin
-            execute data_warehouse.Warehouse.ins_dim_doctor;
-        end
-
-    if exists(select * from data_warehouse.Warehouse.Dim_Patient)
-        begin
-            execute data_warehouse.Warehouse.first_load_dim_patient;
-        end
-    else
-        begin
-            execute data_warehouse.Warehouse.ins_dim_patient;
-        end
-
+--     execute data_warehouse.Warehouse.ins_dim_department;
+--
+--     if exists(select * from data_warehouse.Warehouse.Dim_Doctor)
+--         begin
+--             execute data_warehouse.Warehouse.first_load_dim_doctor;
+--         end
+--     else
+--         begin
+--             execute data_warehouse.Warehouse.ins_dim_doctor;
+--         end
+--
+--     if exists(select * from data_warehouse.Warehouse.Dim_Patient)
+--         begin
+--             execute data_warehouse.Warehouse.first_load_dim_patient;
+--         end
+--     else
+--         begin
+--             execute data_warehouse.Warehouse.ins_dim_patient;
+--         end
+--
     declare @start_visit_date date;
     declare @end_visit_date date;
+    --
+--     if exists(select * from data_warehouse.Warehouse.Dim_Visit)
+--         begin
+--             select @start_visit_date = DATEADD(day, 1, max(visit_date))
+--             from data_warehouse.Warehouse.Dim_Visit
+--
+--             select @end_visit_date = max(visit_date)
+--             from staging.Cache.Visit
+--         end
+--     else
+--         begin
+    select @start_visit_date = min(visit_date), @end_visit_date = max(visit_date)
+    from staging.Cache.Visit
+    --         end
 
-    if exists(select * from data_warehouse.Warehouse.Dim_Visit)
-        begin
-            select @start_visit_date = DATEADD(day, 1, max(visit_date))
-            from data_warehouse.Warehouse.Dim_Visit
+--     execute data_warehouse.Warehouse.ins_dim_visit @start_visit_date, @end_visit_date;
 
-            select @end_visit_date = max(visit_date)
-            from staging.Cache.Visit
-        end
-    else
-        begin
-            select @start_visit_date = min(visit_date), @end_visit_date = max(visit_date)
-            from staging.Cache.Visit
-        end
+--     execute data_warehouse.Warehouse.ins_dim_treatment @start_visit_date, @end_visit_date;
 
-    execute data_warehouse.Warehouse.ins_dim_visit @start_visit_date, @end_visit_date;
+--     execute data_warehouse.Warehouse.ins_dim_medication @start_visit_date, @end_visit_date;
 
-    execute data_warehouse.Warehouse.ins_dim_treatment @start_visit_date, @end_visit_date;
+--     execute data_warehouse.Warehouse.ins_dim_billing @start_visit_date, @end_visit_date;
 
-    execute data_warehouse.Warehouse.ins_dim_medication @start_visit_date, @end_visit_date;
-
-    execute data_warehouse.Warehouse.ins_dim_billing @start_visit_date, @end_visit_date;
-
-    execute data_warehouse.Warehouse.ins_fact_visit_transactional @start_visit_date, @end_visit_date;
-
-    execute data_warehouse.Warehouse.ins_fact_patient_daily @start_visit_date, @end_visit_date;
+--     execute data_warehouse.Warehouse.ins_fact_visit_transactional @start_visit_date, @end_visit_date
 
     execute data_warehouse.Warehouse.ins_fact_patient_daily @start_visit_date, @end_visit_date;
 
-    execute data_warehouse.Warehouse.ins_fact_patient_acc;
+    --     execute data_warehouse.Warehouse.ins_fact_patient_acc;
 
-    execute data_warehouse.Warehouse.ins_fact_patient_doctor_factless;
+--     execute data_warehouse.Warehouse.ins_fact_patient_doctor_factless;
 end;
 go
 
+use data_warehouse
 execute data_warehouse.Warehouse.main
 
-truncate table Warehouse.Dim_Department
-truncate table Warehouse.Dim_Doctor
-truncate table Warehouse.Dim_Patient
-truncate table Warehouse.Dim_Visit
-truncate table Warehouse.Dim_Treatment
-truncate table Warehouse.Dim_Medication
-truncate table Warehouse.Dim_Billing
-truncate table Warehouse.Fact_Visit_Transactional
-truncate table Warehouse.Fact_Patient_Daily
-truncate table Warehouse.Fact_Patient_ACC
-truncate table Warehouse.Fact_Patient_Doctor_Factless
-
-use msdb
-
-
-
+truncate table data_warehouse.Warehouse.Dim_Department
+truncate table data_warehouse.Warehouse.Dim_Doctor
+truncate table data_warehouse.Warehouse.Dim_Patient
+truncate table data_warehouse.Warehouse.Dim_Visit
+truncate table data_warehouse.Warehouse.Dim_Treatment
+truncate table data_warehouse.Warehouse.Dim_Medication
+truncate table data_warehouse.Warehouse.Dim_Billing
+truncate table data_warehouse.Warehouse.Fact_Visit_Transactional
+truncate table data_warehouse.Warehouse.Fact_Patient_Daily
+truncate table data_warehouse.Warehouse.Fact_Patient_ACC
+truncate table data_warehouse.Warehouse.Fact_Patient_Doctor_Factless
